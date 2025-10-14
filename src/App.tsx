@@ -8,66 +8,31 @@ import { Loader } from './components/Loader';
 const BASE_IMAGE_BRAIN_URL = 'https://i.postimg.cc/LXMYjwtX/Inserir-um-t-tulo-6.png';
 const BASE_IMAGE_ANIMALS_URL = 'https://i.postimg.cc/0N1sjN2W/Inserir-um-t-tulo-7.png';
 
-/**
- * Analisa os parâmetros da consulta da URL para obter os dados da aplicação.
- * Suporta o novo parâmetro JSON `data` e recorre aos parâmetros individuais legados como fallback.
- * Para o formato legado, infere o animal "Principal" com base na maior pontuação.
- * @param query - O objeto URLSearchParams da URL.
- * @returns Um objeto de dados estruturado ou nulo se nenhum dado válido for encontrado.
- */
 const getNormalizedDataFromQuery = (query: URLSearchParams): Record<string, any> | null => {
   const dataParam = query.get('data');
   if (dataParam) {
     try {
       return JSON.parse(dataParam);
     } catch (e) {
+      console.error("Failed to parse 'data' parameter:", e);
       throw new Error("O valor do parâmetro 'data' não é um JSON válido.");
     }
   }
-
-  // Fallback para o tratamento de parâmetros legados
-  const legacyParams: { [key: string]: string } = {
-    A: 'aguia', G: 'gato', T: 'tubarao', L: 'lobo',
-    "Razão Esquerdo": 'razao', "Emoção Direito": 'emocao',
-    "Pensante Anterior": 'pensante', "Atuante Posterior": 'atuante',
-  };
-
-  const jsonData: Record<string, any> = {};
-  let hasLegacyParams = false;
-
-  for (const [key, paramName] of Object.entries(legacyParams)) {
-    const value = query.get(paramName);
-    if (value !== null) {
-      jsonData[key] = value;
-      hasLegacyParams = true;
-    }
-  }
-
-  if (!hasLegacyParams) {
-    return null; // Nenhum dado encontrado
-  }
-
-  // Infere o "Principal" para o formato legado, encontrando o animal com a maior porcentagem
-  const animalScores: { [key: string]: number } = {
-    'Águia': parseInt(jsonData.A, 10) || 0,
-    'Gato': parseInt(jsonData.G, 10) || 0,
-    'Tubarão': parseInt(jsonData.T, 10) || 0,
-    'Lobo': parseInt(jsonData.L, 10) || 0,
-  };
-  
-  let principalAnimal = 'Águia'; // Valor padrão
-  let maxScore = -1;
-
-  for (const [animal, score] of Object.entries(animalScores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      principalAnimal = animal;
-    }
-  }
-  jsonData['Principal'] = principalAnimal;
-
-  return jsonData;
+  return null;
 };
+
+const initialFormData = {
+    A: "35",
+    G: "20",
+    T: "30",
+    L: "15",
+    Principal: "Águia",
+    "Razão Esquerdo": "55",
+    "Emoção Direito": "45",
+    "Pensante Anterior": "60",
+    "Atuante Posterior": "40"
+};
+
 
 const App: React.FC = () => {
   const query = useUrlQuery();
@@ -75,57 +40,41 @@ const App: React.FC = () => {
   const [animalImage, setAnimalImage] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Record<string, string>>(initialFormData);
+  
+  const hasDataInUrl = useUrlQuery().has('data');
 
-  const processImages = useCallback(async () => {
+  const processData = useCallback(async (data: Record<string, any>) => {
     setLoading(true);
     setError(null);
+    setAnimalImage(null);
+    setBrainImage(null);
 
     try {
-      const jsonData = getNormalizedDataFromQuery(query);
-
-      if (!jsonData) {
-        setError('Parâmetro "data" não encontrado na URL. Forneça um objeto JSON URL-encoded com os dados necessários.');
-        setLoading(false);
-        return;
-      }
-
       const requiredKeys = ["A", "G", "T", "L", "Principal", "Emoção Direito", "Razão Esquerdo", "Pensante Anterior", "Atuante Posterior"];
-      const missingKeys = requiredKeys.filter(key => !(key in jsonData));
+      const missingKeys = requiredKeys.filter(key => !(key in data));
       if (missingKeys.length > 0) {
-        throw new Error(`As seguintes chaves estão faltando nos dados da URL: ${missingKeys.join(', ')}`);
+        throw new Error(`As seguintes chaves estão faltando nos dados: ${missingKeys.join(', ')}`);
       }
 
       const animalData: AnimalData = {
-        aguia: parseInt(jsonData.A, 10),
-        gato: parseInt(jsonData.G, 10),
-        tubarao: parseInt(jsonData.T, 10),
-        lobo: parseInt(jsonData.L, 10),
+        aguia: parseInt(data.A, 10),
+        gato: parseInt(data.G, 10),
+        tubarao: parseInt(data.T, 10),
+        lobo: parseInt(data.L, 10),
       };
 
       const brainData = {
-        razao: parseInt(jsonData["Razão Esquerdo"], 10),
-        emocao: parseInt(jsonData["Emoção Direito"], 10),
-        pensante: parseInt(jsonData["Pensante Anterior"], 10),
-        atuante: parseInt(jsonData["Atuante Posterior"], 10),
+        razao: parseInt(data["Razão Esquerdo"], 10),
+        emocao: parseInt(data["Emoção Direito"], 10),
+        pensante: parseInt(data["Pensante Anterior"], 10),
+        atuante: parseInt(data["Atuante Posterior"], 10),
       };
       
       const allData = { ...animalData, ...brainData };
       const invalidParams = Object.entries(allData).filter(([, value]) => isNaN(value)).map(([key]) => key);
       if (invalidParams.length > 0) {
         throw new Error(`Os seguintes parâmetros contêm valores inválidos (não são números): ${invalidParams.join(', ')}.`);
-      }
-
-      const principalAnimalFullName = jsonData.Principal;
-      const animalNameMap: { [key: string]: keyof AnimalData } = {
-          'Águia': 'aguia',
-          'Gato': 'gato',
-          'Tubarão': 'tubarao',
-          'Lobo': 'lobo'
-      };
-      const principalAnimalKey = animalNameMap[principalAnimalFullName];
-
-      if (!principalAnimalKey) {
-        throw new Error(`Valor de "Principal" inválido: "${principalAnimalFullName}". Valores esperados: Águia, Gato, Tubarão, Lobo.`);
       }
 
       const [generatedAnimalImg, generatedBrainImg] = await Promise.all([
@@ -142,42 +91,109 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, []);
 
   useEffect(() => {
-    processImages();
-  }, [processImages]);
+    if (hasDataInUrl) {
+      try {
+        const jsonData = getNormalizedDataFromQuery(query);
+        if (jsonData) {
+            processData(jsonData);
+        } else {
+             setError('Parâmetro "data" não encontrado na URL. Forneça um objeto JSON URL-encoded com os dados necessários.');
+             setLoading(false);
+        }
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Erro ao ler dados da URL.');
+         setLoading(false);
+      }
+    } else {
+      setLoading(false); // No data in URL, stop loading and show form
+    }
+  }, [processData, query, hasDataInUrl]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({...prev, [name]: value}));
+  };
+
+  const handleGenerateClick = () => {
+     processData(formData);
+  };
+
+  const renderForm = () => (
+    <div className="w-full max-w-4xl mx-auto bg-gray-900/50 p-8 rounded-lg border border-gray-700">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <div className="md:col-span-2">
+                <h3 className="text-2xl font-bold text-teal-400 border-b border-gray-600 pb-2 mb-4">Perfil Comportamental</h3>
+            </div>
+            {Object.entries({ A: 'Águia %', G: 'Gato %', T: 'Tubarão %', L: 'Lobo %' }).map(([key, label]) => (
+                <div key={key}>
+                    <label htmlFor={key} className="block text-sm font-medium text-gray-300">{label}</label>
+                    <input type="number" name={key} id={key} value={formData[key]} onChange={handleInputChange} className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 text-white p-2" />
+                </div>
+            ))}
+             <div>
+                <label htmlFor="Principal" className="block text-sm font-medium text-gray-300">Animal Principal</label>
+                <select name="Principal" id="Principal" value={formData.Principal} onChange={handleInputChange} className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 text-white p-2">
+                    <option>Águia</option>
+                    <option>Gato</option>
+                    <option>Tubarão</option>
+                    <option>Lobo</option>
+                </select>
+            </div>
+
+            <div className="md:col-span-2 mt-6">
+                <h3 className="text-2xl font-bold text-teal-400 border-b border-gray-600 pb-2 mb-4">Mapeamento Cerebral</h3>
+            </div>
+            {Object.entries({ "Razão Esquerdo": 'Razão Esquerdo %', "Emoção Direito": 'Emoção Direito %', "Pensante Anterior": 'Pensante Anterior %', "Atuante Posterior": 'Atuante Posterior %' }).map(([key, label]) => (
+                 <div key={key}>
+                    <label htmlFor={key} className="block text-sm font-medium text-gray-300">{label}</label>
+                    <input type="number" name={key} id={key} value={formData[key]} onChange={handleInputChange} className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 text-white p-2" />
+                </div>
+            ))}
+        </div>
+        <div className="mt-8 text-center">
+            <button onClick={handleGenerateClick} className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
+                Gerar Imagens
+            </button>
+        </div>
+    </div>
+  );
 
   const renderContent = () => {
-    if (loading) {
-      return <Loader />;
-    }
+    if (loading) return <Loader />;
 
     if (error) {
       return (
         <div className="text-center p-8 bg-red-900/50 border border-red-700 rounded-lg max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-red-400 mb-2">Erro</h2>
           <p className="text-red-300 font-mono break-words">{error}</p>
-          <p className="mt-4 text-gray-400">Exemplo de URL correta (JSON precisa ser URL-encoded):<br/>
-          <code className="text-sm bg-gray-900 p-1 rounded">{'?data={"A":35,"G":20,"T":30,"L":15,"Principal":"Águia","Razão Esquerdo":55,"Emoção Direito":45,"Pensante Anterior":60,"Atuante Posterior":40}'}</code>
-          </p>
+          {!hasDataInUrl && <button onClick={() => setError(null)} className="mt-4 bg-gray-700 text-white py-2 px-4 rounded">Tentar Novamente</button>}
+          {hasDataInUrl && <p className="mt-4 text-gray-400">Exemplo de URL correta (JSON precisa ser URL-encoded):<br/><code className="text-sm bg-gray-900 p-1 rounded">{'?data={"A":35,"G":20,"T":30,"L":15,"Principal":"Águia","Razão Esquerdo":55,"Emoção Direito":45,"Pensante Anterior":60,"Atuante Posterior":40}'}</code></p>}
         </div>
       );
     }
 
     if (animalImage && brainImage) {
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-          <ImageResultCard
-            title="Perfil Comportamental"
-            imageUrl={animalImage}
-          />
-          <ImageResultCard
-            title="Mapeamento Cerebral"
-            imageUrl={brainImage}
-          />
-        </div>
+        <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+              <ImageResultCard title="Perfil Comportamental" imageUrl={animalImage} />
+              <ImageResultCard title="Mapeamento Cerebral" imageUrl={brainImage} />
+            </div>
+            <div className="text-center mt-8">
+                <button onClick={() => { setAnimalImage(null); setBrainImage(null); }} className="bg-gray-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 transition-colors">
+                    Gerar Novamente
+                </button>
+            </div>
+        </>
       );
+    }
+    
+    // If no data in url and no images generated, show form
+    if (!hasDataInUrl) {
+      return renderForm();
     }
     
     return null;
@@ -190,7 +206,7 @@ const App: React.FC = () => {
           Seu Resultado Personalizado
         </h1>
         <p className="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
-          As imagens abaixo foram geradas dinamicamente com base no seu perfil.
+          {hasDataInUrl ? 'As imagens abaixo foram geradas dinamicamente com base no seu perfil.' : 'Preencha os dados abaixo para gerar suas imagens personalizadas.'}
         </p>
       </header>
       <main className="w-full max-w-6xl">
