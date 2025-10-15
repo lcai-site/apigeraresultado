@@ -1,67 +1,132 @@
-import React from 'react'; // LINHA ADICIONADA E ESSENCIAL
+// FIX: Import React to resolve 'React' namespace error for JSX and React types.
+import React from 'react';
 import { ImageResponse } from '@vercel/og';
+// Use standard Request for better compatibility
 
-export const config = {
-  runtime: 'edge',
+export const runtime = 'edge';
+
+// URLs das imagens base
+const BASE_IMAGE_BRAIN_URL = 'https://i.postimg.cc/LXMYjwtX/Inserir-um-t-tulo-6.png';
+const BASE_IMAGE_ANIMALS_URL = 'https://i.postimg.cc/0N1sjN2W/Inserir-um-t-tulo-7.png';
+const N8N_WEBHOOK_URL = 'https://n8n.lcai.com.br/webhook/imagensprontas';
+
+// ... (interfaces AnimalData e BrainData permanecem as mesmas) ...
+interface AnimalData { lobo: number; aguia: number; tubarao: number; gato: number; }
+interface BrainData { pensante: number; atuante: number; razao: number; emocao: number; }
+
+// Função para converter ArrayBuffer para Base64
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+// MUDANÇA CRUCIAL: Esta função agora lê o JSON do corpo (body) de um POST
+const getJsonData = async (req: Request) => {
+    try {
+        return await req.json(); // Lê os dados do "envelope" (POST)
+    } catch (e) {
+        throw new Error("O corpo da requisição não é um JSON válido.");
+    }
+}
+
+const generateImage = async (baseImageUrl: string, children: React.ReactNode) => {
+    const fontData = await fetch(
+        new URL('https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aX8.ttf')
+    ).then((res) => res.arrayBuffer());
+
+    const response = new ImageResponse(
+        (
+            <div style={{
+                display: 'flex', width: '100%', height: '100%',
+                backgroundImage: `url(${baseImageUrl})`, backgroundSize: '100% 100%',
+            }}>
+                {children}
+            </div>
+        ),
+        {
+            width: 650, height: 900,
+            fonts: [{ name: 'Montserrat', data: fontData, style: 'normal', weight: 700 }],
+        }
+    );
+    const buffer = await response.arrayBuffer();
+    return `data:image/png;base64,${arrayBufferToBase64(buffer)}`;
 };
 
-export default async function handler(request: Request) {
-  try {
-    const data = await request.json();
+export default async function handler(req: Request) {
+    try {
+        // A função agora usa 'await' porque ler o corpo é uma operação assíncrona
+        const jsonData = await getJsonData(req);
 
-    const {
-      A = 0,
-      G = 0,
-      T = 0,
-      L = 0,
-      Principal = 'N/A',
-      Secundario = 'N/A',
-      'Emoção Direito': emocaoDireito = 0,
-      'Razão Esquerdo': razaoEsquerdo = 0,
-      'Pensante Anterior': pensanteAnterior = 0,
-      'Atuante Posterior': atuantePosterior = 0,
-    } = data;
+        // Validação de dados
+        const requiredKeys = ["A", "G", "T", "L", "Principal", "Emoção Direito", "Razão Esquerdo", "Pensante Anterior", "Atuante Posterior"];
+        const missingKeys = requiredKeys.filter(key => !(key in jsonData));
+        if (missingKeys.length > 0) {
+            throw new Error(`As seguintes chaves estão faltando nos dados: ${missingKeys.join(', ')}`);
+        }
 
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            height: '100%',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#0a0a0a',
-            color: 'white',
-            fontFamily: 'sans-serif',
-            padding: '40px',
-          }}
-        >
-          <h1 style={{ fontSize: 60, color: '#82EEFD', marginBottom: 40, textShadow: '2px 2px 5px #000' }}>
-            Seu Resultado Personalizado
-          </h1>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: 32, marginBottom: 30 }}>
-            <p style={{ margin: 0 }}>Perfil Principal: <b>{Principal}</b></p>
-            <p style={{ margin: 0 }}>Perfil Secundário: <b>{Secundario}</b></p>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-around', width: '90%', fontSize: 28, textAlign: 'center' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}><p style={{ margin: 0 }}>Águia</p><p style={{ margin: 5, color: '#FFD700', fontSize: 36 }}>{A}%</p></div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}><p style={{ margin: 0 }}>Gato</p><p style={{ margin: 5, color: '#FFD700', fontSize: 36 }}>{G}%</p></div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}><p style={{ margin: 0 }}>Lobo</p><p style={{ margin: 5, color: '#FFD700', fontSize: 36 }}>{L}%</p></div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}><p style={{ margin: 0 }}>Tubarão</p><p style={{ margin: 5, color: '#FFD700', fontSize: 36 }}>{T}%</p></div>
-          </div>
-          <div style={{ borderTop: '2px solid #444', width: '80%', margin: '40px 0' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-around', width: '90%', fontSize: 24, textAlign: 'center' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 20px' }}><p style={{ margin: 0 }}><b>Lado Esquerdo (Razão):</b> {razaoEsquerdo}%</p><p style={{ margin: 5 }}><b>Lado Direito (Emoção):</b> {emocaoDireito}%</p></div>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 20px' }}><p style={{ margin: 0 }}><b>Anterior (Pensante):</b> {pensanteAnterior}%</p><p style={{ margin: 5 }}><b>Posterior (Atuante):</b> {atuantePosterior}%</p></div>
-          </div>
-        </div>
-      ),
-      { width: 1200, height: 630 },
-    );
-  } catch (e: any) {
-    console.error(e.message);
-    return new Response(`Falha ao gerar a imagem: ${e.message}`, { status: 500 });
-  }
+        const animalData: AnimalData = {
+            aguia: parseInt(jsonData.A, 10), gato: parseInt(jsonData.G, 10),
+            tubarao: parseInt(jsonData.T, 10), lobo: parseInt(jsonData.L, 10),
+        };
+
+        const brainData: BrainData = {
+            razao: parseInt(jsonData["Razão Esquerdo"], 10), emocao: parseInt(jsonData["Emoção Direito"], 10),
+            pensante: parseInt(jsonData["Pensante Anterior"], 10), atuante: parseInt(jsonData["Atuante Posterior"], 10),
+        };
+
+        // ... (O resto do código de geração de imagem permanece o mesmo) ...
+        const principalAnimalFullName = jsonData.Principal;
+        const animalNameMap: { [key: string]: keyof AnimalData } = {
+            'Águia': 'aguia', 'Gato': 'gato', 'Tubarão': 'tubarao', 'Lobo': 'lobo'
+        };
+        const principalAnimalKey = animalNameMap[principalAnimalFullName];
+        if (!principalAnimalKey) {
+            throw new Error(`Valor de "Principal" inválido: "${principalAnimalFullName}".`);
+        }
+
+        const animalImageBase64 = await generateImage(
+            BASE_IMAGE_ANIMALS_URL,
+            <>
+                <div style={{ position: 'absolute', top: 262, left: 110, width: 'auto', textAlign: 'right', color: principalAnimalKey === 'lobo' ? '#FFED00' : 'white', fontSize: principalAnimalKey === 'lobo' ? 40 : 36, fontFamily: 'Montserrat', fontWeight: 700, textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>{animalData.lobo}%</div>
+                <div style={{ position: 'absolute', top: 262, left: 410, width: 'auto', textAlign: 'right', color: principalAnimalKey === 'aguia' ? '#FFED00' : 'white', fontSize: principalAnimalKey === 'aguia' ? 40 : 36, fontFamily: 'Montserrat', fontWeight: 700, textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>{animalData.aguia}%</div>
+                <div style={{ position: 'absolute', top: 612, left: 110, width: 'auto', textAlign: 'right', color: principalAnimalKey === 'tubarao' ? '#FFED00' : 'white', fontSize: principalAnimalKey === 'tubarao' ? 40 : 36, fontFamily: 'Montserrat', fontWeight: 700, textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>{animalData.tubarao}%</div>
+                <div style={{ position: 'absolute', top: 612, left: 410, width: 'auto', textAlign: 'right', color: principalAnimalKey === 'gato' ? '#FFED00' : 'white', fontSize: principalAnimalKey === 'gato' ? 40 : 36, fontFamily: 'Montserrat', fontWeight: 700, textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>{animalData.gato}%</div>
+            </>
+        );
+
+        const brainImageBase64 = await generateImage(
+            BASE_IMAGE_BRAIN_URL,
+            <>
+                <div style={{ position: 'absolute', top: 218, left: 0, width: '100%', textAlign: 'center', color: 'white', fontSize: 44, fontFamily: 'Montserrat', fontWeight: 700, textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>{brainData.pensante}%</div>
+                <div style={{ position: 'absolute', top: 758, left: 0, width: '100%', textAlign: 'center', color: 'white', fontSize: 44, fontFamily: 'Montserrat', fontWeight: 700, textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>{brainData.atuante}%</div>
+                <div style={{ position: 'absolute', top: 428, left: 48, width: 'auto', textAlign: 'left', color: 'white', fontSize: 44, fontFamily: 'Montserrat', fontWeight: 700, textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>{brainData.razao}%</div>
+                <div style={{ position: 'absolute', top: 428, right: 48, width: 'auto', textAlign: 'right', color: 'white', fontSize: 44, fontFamily: 'Montserrat', fontWeight: 700, textShadow: '0 0 10px rgba(0,0,0,0.8)' }}>{brainData.emocao}%</div>
+            </>
+        );
+
+        const n8nPayload = { animalImage: animalImageBase64, brainImage: brainImageBase64, params: jsonData };
+
+        await fetch(N8N_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(n8nPayload),
+        });
+
+        return new Response(
+            JSON.stringify({ success: true, message: "Imagens geradas e enviadas para o N8N com sucesso." }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+
+    } catch (e: any) {
+        console.error(e);
+        return new Response(
+            JSON.stringify({ success: false, error: e.message }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+    }
 }
