@@ -1,10 +1,8 @@
 {
-  "functions": {
-    "api/**/*.mjs": {
-      "runtime": "nodejs18.x"
-    },
-    "api/**/*.mts": {
-        "runtime": "nodejs18.x"
+  "builds": [
+    {
+      "src": "api/generate.mts",
+      "use": "@vercel/node"
     }
-  }
+  ]
 }
