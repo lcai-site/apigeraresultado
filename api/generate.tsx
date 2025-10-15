@@ -10,7 +10,12 @@ const BASE_IMAGE_BRAIN_URL = 'https://i.postimg.cc/LXMYjwtX/Inserir-um-t-tulo-6.
 const BASE_IMAGE_ANIMALS_URL = 'https://i.postimg.cc/0N1sjN2W/Inserir-um-t-tulo-7.png';
 
 const getFont = async () => {
-  const res = await fetch('https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aXo.ttf');
+  // Usando um CDN mais direto para evitar problemas de fetch no ambiente Edge da Vercel.
+  const res = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/montserrat/files/montserrat-latin-700-normal.ttf');
+  if (!res.ok) {
+    // Retorna um erro claro se o download da fonte falhar.
+    throw new Error(`Falha ao carregar a fonte do CDN: ${res.status} ${res.statusText}`);
+  }
   return res.arrayBuffer();
 }
 
