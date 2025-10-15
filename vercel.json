@@ -1,9 +1,9 @@
 {
   "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.tsx",
-      "use": "@vercel/node"
+      "source": "/api/generate",
+      "destination": "/api/index"
     }
   ]
 }
