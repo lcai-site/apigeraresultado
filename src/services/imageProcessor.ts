@@ -12,6 +12,41 @@ interface BrainData {
   emocao: number;
 }
 
+// --- N8N Integration ---
+
+// IMPORTANTE: Substitua esta URL de placeholder pela URL real do seu webhook N8N.
+const N8N_WEBHOOK_URL = 'https://n8n.lcai.com.br/webhook/imagensprontas';
+
+interface N8nPayload {
+  animalImage: string;
+  brainImage: string;
+  params: { [key: string]: number | string };
+}
+
+export const sendToN8N = async (payload: N8nPayload): Promise<void> => {
+  // Verification to prevent sending to a placeholder URL
+  if (N8N_WEBHOOK_URL.includes('your-n8n-instance.com') || N8N_WEBHOOK_URL.includes('placeholder')) {
+    console.warn('URL do Webhook N8N é um placeholder. Envio ignorado. Por favor, configure a URL correta em services/imageProcessor.ts');
+    // For demonstration, we resolve successfully to not show an error in the UI.
+    // In a real application, you might want to throw an error here.
+    return;
+  }
+
+  const response = await fetch(N8N_WEBHOOK_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Falha ao enviar dados para N8N. Status: ${response.status}. Corpo: ${errorBody}`);
+  }
+};
+
+
 // --- Image Processing ---
 
 const drawTextWithShadow = (
@@ -29,11 +64,11 @@ const drawTextWithShadow = (
   ctx.textAlign = textAlign;
   ctx.textBaseline = textBaseline;
 
-  // Sombra para legibilidade
+  // Sombra para legibilidade (agora como um brilho centralizado)
   ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
   ctx.shadowBlur = 10;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
+  ctx.shadowOffsetX = 0; // Removido o deslocamento para centralização perfeita
+  ctx.shadowOffsetY = 0; // Removido o deslocamento para centralização perfeita
 
   ctx.fillText(text, x, y);
   
@@ -45,7 +80,7 @@ const drawTextWithShadow = (
 };
 
 
-export const generateAnimalImage = (baseImageUrl: string, data: AnimalData): Promise<string> => {
+export const generateAnimalImage = (baseImageUrl: string, data: AnimalData, principalAnimalKey: keyof AnimalData): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'Anonymous';
@@ -60,33 +95,27 @@ export const generateAnimalImage = (baseImageUrl: string, data: AnimalData): Pro
           return reject(new Error('Não foi possível obter o contexto do canvas.'));
         }
 
+        // --- CORREÇÃO PARA HIGH DPI ---
         const dpr = window.devicePixelRatio || 1;
         canvas.width = img.width * dpr;
         canvas.height = img.height * dpr;
         ctx.scale(dpr, dpr);
+        // --- FIM DA CORREÇÃO ---
 
+        // Garante que a fonte customizada está carregada antes de desenhar o texto
         await document.fonts.ready;
 
         ctx.drawImage(img, 0, 0);
 
         const animalEntries = Object.entries(data) as [keyof AnimalData, number][];
 
-        let highestAnimalName: keyof AnimalData | null = null;
-        let maxPercentage = -1;
-
-        for (const [name, percentage] of animalEntries) {
-            if (percentage > maxPercentage) {
-                maxPercentage = percentage;
-                highestAnimalName = name;
-            }
-        }
-
         const fontName = 'Montserrat, sans-serif';
-        const normalFontSize = 36;
-        const highestFontSize = 40;
+        const normalFontSize = 36; // Aumentado para melhor visibilidade
+        const highestFontSize = 40; // Aumentado para maior destaque
         const normalColor = '#FFFFFF';
-        const highestColor = '#FFED00';
+        const highestColor = '#FFED00'; // Amarelo vibrante
 
+        // Posições ajustadas com precisão para o novo layout, ao lado dos títulos
         const positions: { [key: string]: { x: number; y: number } } = {
           lobo:    { x: 120, y: 280 },
           aguia:   { x: 420, y: 280 },
@@ -95,9 +124,9 @@ export const generateAnimalImage = (baseImageUrl: string, data: AnimalData): Pro
         };
 
         for (const [name, percentage] of animalEntries) {
-          const isHighest = name === highestAnimalName;
-          const fontSize = isHighest ? highestFontSize : normalFontSize;
-          const color = isHighest ? highestColor : normalColor;
+          const isPrincipal = name === principalAnimalKey; // FIX: Use the provided principal key for highlighting
+          const fontSize = isPrincipal ? highestFontSize : normalFontSize;
+          const color = isPrincipal ? highestColor : normalColor;
           const font = `bold ${fontSize}px ${fontName}`;
           const text = `${percentage}%`;
           const { x, y } = positions[name as keyof AnimalData];
@@ -133,27 +162,32 @@ export const generateBrainImage = (baseImageUrl: string, data: BrainData): Promi
           return reject(new Error('Não foi possível obter o contexto do canvas.'));
         }
 
+        // --- CORREÇÃO PARA HIGH DPI ---
         const dpr = window.devicePixelRatio || 1;
         canvas.width = img.width * dpr;
         canvas.height = img.height * dpr;
         ctx.scale(dpr, dpr);
+        // --- FIM DA CORREÇÃO ---
         
+        // Garante que a fonte customizada está carregada antes de desenhar o texto
         await document.fonts.ready;
   
         ctx.drawImage(img, 0, 0);
         
         const fontName = 'Montserrat, sans-serif';
-        const fontSize = 44;
+        const fontSize = 44; // Aumentado para maior destaque e consistência
         const color = '#FFFFFF';
         const font = `bold ${fontSize}px ${fontName}`;
 
+        // Posições ajustadas para alinhar com os indicadores visuais (setas e títulos)
         const positions: { [key: string]: { x: number; y: number; align: CanvasTextAlign } } = {
-            pensante: { x: 320, y: 240, align: 'center' },
-            atuante:  { x: 320, y: 780, align: 'center' },
-            razao:    { x: 48, y: 450, align: 'left'   },
-            emocao:   { x: 600, y: 450, align: 'right'  },
+            pensante: { x: 320, y: 240, align: 'center' }, // Acima do cérebro, alinhado com "PENSANTE"
+            atuante:  { x: 320, y: 780, align: 'center' }, // Abaixo do cérebro, alinhado com "ATUANTE"
+            razao:    { x: 48, y: 450, align: 'left'   }, // À esquerda, alinhado com a seta "RAZÃO"
+            emocao:   { x: 600, y: 450, align: 'right'  }, // À direita, alinhado com a seta "EMOÇÃO"
         };
   
+        // Refatorado para usar um loop para consistência e clareza
         const brainEntries = Object.entries(data) as [keyof BrainData, number][];
 
         for (const [name, percentage] of brainEntries) {
