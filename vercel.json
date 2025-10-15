@@ -1,8 +1,9 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.tsx": {
-      "runtime": "edge"
+  "builds": [
+    {
+      "src": "api/index.tsx",
+      "use": "@vercel/node"
     }
-  }
+  ]
 }
