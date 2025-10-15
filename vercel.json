@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/generate.mts": {
+      "runtime": "@vercel/node@3.0.0"
+    }
+  }
+}
