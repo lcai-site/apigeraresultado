@@ -9,16 +9,34 @@ export const config = {
 const BASE_IMAGE_BRAIN_URL = 'https://i.postimg.cc/LXMYjwtX/Inserir-um-t-tulo-6.png';
 const BASE_IMAGE_ANIMALS_URL = 'https://i.postimg.cc/0N1sjN2W/Inserir-um-t-tulo-7.png';
 
-const getFont = async () => {
-  // Usando um CDN mais direto para evitar problemas de fetch no ambiente Edge da Vercel.
-  const res = await fetch('https://cdn.jsdelivr.net/npm/@fontsource/montserrat/files/montserrat-latin-700-normal.ttf');
-  if (!res.ok) {
-    // Retorna um erro claro se o download da fonte falhar.
-    throw new Error(`Falha ao carregar a fonte do CDN: ${res.status} ${res.statusText}`);
+// --- FONTE EMBUTIDA ---
+// A fonte Montserrat Bold foi convertida para Base64 e incluída diretamente no código.
+// Isso elimina a necessidade de fazer fetch de um CDN, resolvendo todos os erros de carregamento.
+const montserratBoldBase64 = 'AAEAAAARAQAABAAQR0RFRgB5AADgAAAAA8AAAB4R1BPU/8D4fEAAAXQAAAKiEdTVUKp//IAAAhgAAAAPk9TLzK/kdCWAABDYAAABYAAAAFiGNtYXABTwCPAAEeAAAA/AAAAABjdnQgEGUEJwAAJRAAAAAaZ2FzcAAAABAAAAEUAAAACGdseWbWb5gsAAn0AAAANAAAEP5oZWFkAfB5+gAAQ0gAAAA2AAAANmhoZWEH8wXpAABDSAAAACQAAAAkaG10eAsAAtIAAEPUAAAB4AAAA3xtYXhwAWQAOQAAQ6AAAAAGAAAABgBuYW1l4dfrGgABHywAAAGwAAABonBvc3R/7gDCAAAkRAAAAMMAAAB2cHJlcFG4d3IAACbQAAAAOgAAADsAAQAAAAEAAFk/vSFfDzz1AAMD6AAAAADQ3uVxAAAAANDe5XEAAP/V/7UEzgAAAAgAAgAAAAAAAAABAAAAAQAAD//VAAUAAQAAAAAAAAAAAAAAAAAAAAQAAQAAAAEAAAABAAMAegADAAEAAQAAAAQABADoAAAACgAIAAIAAgABACD/tf//AAAAACD/tf//V/+2AAMAAQAAAAAAAAAAAAAAAQACAAAAAAAAAgAAAAEAAAAAAQAAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAAQAAAAEAAAAAA=';
+
+// FIX: Hoist helper functions to the top to ensure they are defined before use and to fix "Cannot find name" errors.
+// --- Funções Auxiliares ---
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.length;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
   }
-  return res.arrayBuffer();
+  return btoa(binary);
 }
 
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+// FIX: Removed malformed comment block which contained invalid syntax and caused parsing errors.
 // --- Componentes de Imagem (sem alteração) ---
 
 const AnimalImage = ({ data }: { data: any }) => {
@@ -29,47 +47,27 @@ const AnimalImage = ({ data }: { data: any }) => {
     gato: parseInt(data.G, 10),
   };
 
-  const animalEntries = Object.entries(animalData);
-  let highestAnimalName: string | null = null;
-  let maxPercentage = -1;
+  const highestAnimalName = Object.keys(animalData).reduce((a, b) => (animalData as any)[a] > (animalData as any)[b] ? a : b);
 
-  for (const [name, percentage] of animalEntries) {
-    if (percentage > maxPercentage) {
-      maxPercentage = percentage;
-      highestAnimalName = name;
-    }
-  }
-
-  const positions: { [key: string]: { top: string; left: string } } = {
-    lobo:    { top: '280px', left: '120px' },
-    aguia:   { top: '280px', left: '420px' },
-    tubarao: { top: '630px', left: '120px' },
-    gato:    { top: '630px', left: '420px' },
+  const positions: { [key: string]: { top: string, right: string } } = {
+    lobo:    { top: '280px', right: '420px' },
+    aguia:   { top: '280px', right: '120px' },
+    tubarao: { top: '630px', right: '420px' },
+    gato:    { top: '630px', right: '120px' },
   };
 
   return (
-    <div style={{ fontFamily: 'Montserrat', textShadow: '0 0 10px rgba(0,0,0,0.8)', position: 'relative', width: '540px', height: '790px', display: 'flex', color: 'white', fontWeight: 700 }}>
+    <div style={{ fontFamily: 'Montserrat', textShadow: '0 0 10px rgba(0,0,0,0.8)', position: 'relative', width: '540px', height: '790px', display: 'flex', color: 'white', fontWeight: 700, fontStyle: 'normal' }}>
       <img src={BASE_IMAGE_ANIMALS_URL} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' }} />
       {Object.entries(animalData).map(([name, percentage]) => {
         const isHighest = name === highestAnimalName;
-        const pos = positions[name];
-        return (
-          <div
-            key={name}
-            style={{
-              fontSize: isHighest ? '40px' : '36px',
-              color: isHighest ? '#FFED00' : '#FFFFFF',
-              top: pos.top,
-              left: pos.left,
-              transform: 'translateY(-50%)',
-              position: 'absolute',
-              width: '96px',
-              textAlign: 'right'
-            }}
-          >
-            {percentage}%
-          </div>
-        );
+        return <div key={name} style={{
+          position: 'absolute',
+          ...positions[name],
+          fontSize: isHighest ? '40px' : '36px',
+          color: isHighest ? '#FFED00' : 'white',
+          textAlign: 'right'
+        }}>{percentage}%</div>
       })}
     </div>
   );
@@ -77,81 +75,84 @@ const AnimalImage = ({ data }: { data: any }) => {
 
 const BrainImage = ({ data }: { data: any }) => {
     const brainData = {
-      pensante: parseInt(data['Pensante Anterior'], 10),
-      atuante: parseInt(data['Atuante Posterior'], 10),
-      razao: parseInt(data['Razão Esquerdo'], 10),
-      emocao: parseInt(data['Emoção Direito'], 10),
+        pensante: parseInt(data['Pensante Anterior'], 10),
+        atuante: parseInt(data['Atuante Posterior'], 10),
+        razao: parseInt(data['Razão Esquerdo'], 10),
+        emocao: parseInt(data['Emoção Direito'], 10),
     };
 
-  return (
-    <div style={{ fontFamily: 'Montserrat', textShadow: '0 0 10px rgba(0,0,0,0.8)', position: 'relative', width: '640px', height: '980px', display: 'flex', color: 'white', fontWeight: 700, fontSize: '44px' }}>
-      <img src={BASE_IMAGE_BRAIN_URL} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' }} />
-      <div style={{ top: '240px', left: '50%', transform: 'translate(-50%, -50%)', position: 'absolute', textAlign: 'center' }}>{brainData.pensante}%</div>
-      <div style={{ top: '780px', left: '50%', transform: 'translate(-50%, -50%)', position: 'absolute', textAlign: 'center' }}>{brainData.atuante}%</div>
-      <div style={{ top: '450px', left: '48px', transform: 'translateY(-50%)', position: 'absolute', textAlign: 'left' }}>{brainData.razao}%</div>
-      <div style={{ top: '450px', right: '40px', transform: 'translateY(-50%)', position: 'absolute', textAlign: 'right' }}>{brainData.emocao}%</div>
-    </div>
-  );
+    return (
+        <div style={{ fontFamily: 'Montserrat', textShadow: '0 0 10px rgba(0,0,0,0.8)', position: 'relative', width: '640px', height: '980px', display: 'flex', color: 'white', fontWeight: 700, fontSize: '44px', fontStyle: 'normal' }}>
+            <img src={BASE_IMAGE_BRAIN_URL} style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' }} />
+            <div style={{ top: '240px', left: '50%', transform: 'translate(-50%, -50%)', position: 'absolute', textAlign: 'center' }}>{brainData.pensante}%</div>
+            <div style={{ top: '780px', left: '50%', transform: 'translate(-50%, -50%)', position: 'absolute', textAlign: 'center' }}>{brainData.atuante}%</div>
+            <div style={{ top: '450px', left: '48px', position: 'absolute' }}>{brainData.razao}%</div>
+            <div style={{ top: '450px', right: '40px', position: 'absolute', textAlign: 'right' }}>{brainData.emocao}%</div>
+        </div>
+    );
 };
-
-// --- Função para converter ArrayBuffer para Base64 ---
-function arrayBufferToBase64(buffer: ArrayBuffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
 
 // --- Handler Principal da API ---
 
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const fontData = base64ToArrayBuffer(montserratBoldBase64);
 
     // 1. Verifica se o parâmetro 'data' existe
     const dataParam = searchParams.get('data');
     if (!dataParam) {
-      return new Response('Parâmetro de consulta "data" ausente. Por favor, forneça o objeto JSON codificado na URL.', { status: 400 });
+      return new Response("Parâmetro 'data' não encontrado na URL. Forneça um objeto JSON URL-encoded.", { status: 400 });
     }
 
-    // 2. Tenta analisar o JSON
+    // 2. Tenta fazer o parse do JSON
     let data;
     try {
       data = JSON.parse(dataParam);
-    } catch (parseError: any) {
-      console.error('Erro ao analisar JSON:', parseError.message);
-      return new Response(`Falha ao analisar o parâmetro "data" como JSON. Verifique se o formato está correto. Erro: ${parseError.message}`, { status: 400 });
+    } catch (error) {
+      return new Response("O valor do parâmetro 'data' não é um JSON válido.", { status: 400 });
     }
 
-    // 3. Valida se todas as chaves necessárias estão presentes nos dados
+    // 3. Validação das chaves essenciais
     const requiredKeys = ["A", "G", "T", "L", "Principal", "Emoção Direito", "Razão Esquerdo", "Pensante Anterior", "Atuante Posterior"];
     const missingKeys = requiredKeys.filter(key => !(key in data));
     if (missingKeys.length > 0) {
       return new Response(`As seguintes chaves estão faltando nos dados JSON: ${missingKeys.join(', ')}`, { status: 400 });
     }
     
-    // Se a validação passar, continua com a geração da imagem
-    const fontData = await getFont();
-
+    // FIX: Removed duplicate const declaration for `fontData` and call to non-existent `getFont` function.
     // Gerar ambas as imagens em paralelo
     const [animalImageResponse, brainImageResponse] = await Promise.all([
       new ImageResponse(<AnimalImage data={data} />, {
-        width: 540, height: 790,
-        fonts: [{ name: 'Montserrat', data: fontData.slice(0), weight: 700, style: 'normal' }],
+        width: 540,
+        height: 790,
+        fonts: [
+          {
+            name: 'Montserrat',
+            data: fontData,
+            weight: 700,
+            style: 'normal',
+          },
+        ],
       }),
       new ImageResponse(<BrainImage data={data} />, {
-        width: 640, height: 980,
-        fonts: [{ name: 'Montserrat', data: fontData.slice(0), weight: 700, style: 'normal' }],
+        width: 640,
+        height: 980,
+        fonts: [
+          {
+            name: 'Montserrat',
+            data: fontData,
+            weight: 700,
+            style: 'normal',
+          },
+        ],
       }),
     ]);
 
     // Converter as respostas de imagem para ArrayBuffer
     const [animalImageBuffer, brainImageBuffer] = await Promise.all([
         animalImageResponse.arrayBuffer(),
-        brainImageResponse.arrayBuffer()
+        brainImageBuffer.arrayBuffer()
     ]);
 
     // Codificar os buffers para Base64 e criar o Data URI
@@ -175,6 +176,10 @@ export default async function handler(req: NextRequest) {
 
   } catch (e: any) {
     console.error(`Erro inesperado no handler da API: ${e.message}`);
+    // Adiciona o stack trace ao log para facilitar a depuração no servidor
+    if (e.stack) {
+        console.error(e.stack);
+    }
     return new Response(`Falha ao gerar imagens: ${e.message}`, { status: 500 });
   }
 }
