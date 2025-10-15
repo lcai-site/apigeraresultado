@@ -124,7 +124,9 @@ export const generateAnimalImage = (baseImageUrl: string, data: AnimalData, prin
         };
 
         for (const [name, percentage] of animalEntries) {
-          const isPrincipal = name === principalAnimalKey; // FIX: Use the provided principal key for highlighting
+          // BUG FIX: Utiliza o `principalAnimalKey` fornecido para o destaque,
+          // em vez de recalcular com base na maior pontuação.
+          const isPrincipal = name === principalAnimalKey;
           const fontSize = isPrincipal ? highestFontSize : normalFontSize;
           const color = isPrincipal ? highestColor : normalColor;
           const font = `bold ${fontSize}px ${fontName}`;

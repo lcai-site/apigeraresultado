@@ -10,6 +10,13 @@ const BASE_IMAGE_ANIMALS_URL = 'https://i.postimg.cc/0N1sjN2W/Inserir-um-t-tulo-
 
 type SubmissionState = 'idle' | 'sending' | 'success' | 'error';
 
+/**
+ * Analisa os parâmetros da consulta da URL para obter os dados da aplicação.
+ * Suporta o novo parâmetro JSON `data` e recorre aos parâmetros individuais legados como fallback.
+ * Para o formato legado, infere o animal "Principal" com base na maior pontuação.
+ * @param query - O objeto URLSearchParams da URL.
+ * @returns Um objeto de dados estruturado ou nulo se nenhum dado válido for encontrado.
+ */
 const getNormalizedDataFromQuery = (query: URLSearchParams): Record<string, any> | null => {
   const dataParam = query.get('data');
   if (dataParam) {
@@ -64,18 +71,6 @@ const getNormalizedDataFromQuery = (query: URLSearchParams): Record<string, any>
   return jsonData;
 };
 
-const initialFormData = {
-    A: "35",
-    G: "20",
-    T: "30",
-    L: "15",
-    Principal: "Águia",
-    "Razão Esquerdo": "55",
-    "Emoção Direito": "45",
-    "Pensante Anterior": "60",
-    "Atuante Posterior": "40"
-};
-
 const App: React.FC = () => {
   const query = useUrlQuery();
   const [brainImage, setBrainImage] = useState<string | null>(null);
@@ -84,35 +79,39 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [submissionState, setSubmissionState] = useState<SubmissionState>('idle');
   const [submissionError, setSubmissionError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Record<string, string>>(initialFormData);
-  const [dataFromUrl, setDataFromUrl] = useState<Record<string, any> | null>(null);
-  
-  const processData = useCallback(async (data: Record<string, any>) => {
+
+  const processImages = useCallback(async () => {
     setLoading(true);
     setError(null);
-    setAnimalImage(null);
-    setBrainImage(null);
     setSubmissionState('idle');
 
     try {
+      const jsonData = getNormalizedDataFromQuery(query);
+
+      if (!jsonData) {
+        setError('Parâmetro "data" não encontrado na URL. Forneça um objeto JSON URL-encoded com os dados necessários.');
+        setLoading(false);
+        return;
+      }
+
       const requiredKeys = ["A", "G", "T", "L", "Principal", "Emoção Direito", "Razão Esquerdo", "Pensante Anterior", "Atuante Posterior"];
-      const missingKeys = requiredKeys.filter(key => !(key in data));
+      const missingKeys = requiredKeys.filter(key => !(key in jsonData));
       if (missingKeys.length > 0) {
-        throw new Error(`As seguintes chaves estão faltando nos dados: ${missingKeys.join(', ')}`);
+        throw new Error(`As seguintes chaves estão faltando nos dados da URL: ${missingKeys.join(', ')}`);
       }
 
       const animalData: AnimalData = {
-        aguia: parseInt(data.A, 10),
-        gato: parseInt(data.G, 10),
-        tubarao: parseInt(data.T, 10),
-        lobo: parseInt(data.L, 10),
+        aguia: parseInt(jsonData.A, 10),
+        gato: parseInt(jsonData.G, 10),
+        tubarao: parseInt(jsonData.T, 10),
+        lobo: parseInt(jsonData.L, 10),
       };
 
       const brainData = {
-        razao: parseInt(data["Razão Esquerdo"], 10),
-        emocao: parseInt(data["Emoção Direito"], 10),
-        pensante: parseInt(data["Pensante Anterior"], 10),
-        atuante: parseInt(data["Atuante Posterior"], 10),
+        razao: parseInt(jsonData["Razão Esquerdo"], 10),
+        emocao: parseInt(jsonData["Emoção Direito"], 10),
+        pensante: parseInt(jsonData["Pensante Anterior"], 10),
+        atuante: parseInt(jsonData["Atuante Posterior"], 10),
       };
       
       const allData = { ...animalData, ...brainData };
@@ -121,7 +120,7 @@ const App: React.FC = () => {
         throw new Error(`Os seguintes parâmetros contêm valores inválidos (não são números): ${invalidParams.join(', ')}.`);
       }
 
-      const principalAnimalFullName = data.Principal;
+      const principalAnimalFullName = jsonData.Principal;
       const animalNameMap: { [key: string]: keyof AnimalData } = {
           'Águia': 'aguia',
           'Gato': 'gato',
@@ -146,7 +145,7 @@ const App: React.FC = () => {
         await sendToN8N({
           animalImage: generatedAnimalImg,
           brainImage: generatedBrainImg,
-          params: data,
+          params: jsonData,
         });
         setSubmissionState('success');
       } catch (n8nError) {
@@ -162,39 +161,11 @@ const App: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [query]);
 
   useEffect(() => {
-    try {
-        const jsonData = getNormalizedDataFromQuery(query);
-        setDataFromUrl(jsonData);
-        if (jsonData) {
-            processData(jsonData);
-        } else {
-             setLoading(false);
-        }
-    } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Ocorreu um erro desconhecido ao processar os dados.';
-        setError(`Falha ao processar dados da URL: ${errorMessage}`);
-        setLoading(false);
-    }
-  }, [processData, query]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({...prev, [name]: value}));
-  };
-
-  const handleGenerateClick = () => {
-     processData(formData);
-  };
-  
-  const handleReset = () => {
-    setAnimalImage(null);
-    setBrainImage(null);
-    setError(null);
-    setSubmissionState('idle');
-  };
+    processImages();
+  }, [processImages]);
 
   const renderSubmissionStatus = () => {
     if (submissionState === 'idle') return null;
@@ -230,56 +201,19 @@ const App: React.FC = () => {
     );
   };
 
-  const renderForm = () => (
-    <div className="w-full max-w-4xl mx-auto bg-gray-900/50 p-8 rounded-lg border border-gray-700">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-            <div className="md:col-span-2">
-                <h3 className="text-2xl font-bold text-teal-400 border-b border-gray-600 pb-2 mb-4">Perfil Comportamental</h3>
-            </div>
-            {Object.entries({ A: 'Águia %', G: 'Gato %', T: 'Tubarão %', L: 'Lobo %' }).map(([key, label]) => (
-                <div key={key}>
-                    <label htmlFor={key} className="block text-sm font-medium text-gray-300">{label}</label>
-                    <input type="number" name={key} id={key} value={formData[key]} onChange={handleInputChange} className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 text-white p-2" />
-                </div>
-            ))}
-             <div>
-                <label htmlFor="Principal" className="block text-sm font-medium text-gray-300">Animal Principal</label>
-                <select name="Principal" id="Principal" value={formData.Principal} onChange={handleInputChange} className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 text-white p-2">
-                    <option>Águia</option>
-                    <option>Gato</option>
-                    <option>Tubarão</option>
-                    <option>Lobo</option>
-                </select>
-            </div>
-
-            <div className="md:col-span-2 mt-6">
-                <h3 className="text-2xl font-bold text-teal-400 border-b border-gray-600 pb-2 mb-4">Mapeamento Cerebral</h3>
-            </div>
-            {Object.entries({ "Razão Esquerdo": 'Razão Esquerdo %', "Emoção Direito": 'Emoção Direito %', "Pensante Anterior": 'Pensante Anterior %', "Atuante Posterior": 'Atuante Posterior %' }).map(([key, label]) => (
-                 <div key={key}>
-                    <label htmlFor={key} className="block text-sm font-medium text-gray-300">{label}</label>
-                    <input type="number" name={key} id={key} value={formData[key]} onChange={handleInputChange} className="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500 text-white p-2" />
-                </div>
-            ))}
-        </div>
-        <div className="mt-8 text-center">
-            <button onClick={handleGenerateClick} className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300">
-                Gerar Imagens
-            </button>
-        </div>
-    </div>
-  );
-
   const renderContent = () => {
-    if (loading) return <Loader />;
+    if (loading) {
+      return <Loader />;
+    }
 
     if (error) {
       return (
         <div className="text-center p-8 bg-red-900/50 border border-red-700 rounded-lg max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-red-400 mb-2">Erro</h2>
           <p className="text-red-300 font-mono break-words">{error}</p>
-          <button onClick={handleReset} className="mt-4 bg-gray-700 text-white py-2 px-4 rounded">Tentar Novamente</button>
-          {dataFromUrl && <p className="mt-4 text-gray-400">Exemplo de URL correta (JSON precisa ser URL-encoded):<br/><code className="text-sm bg-gray-900 p-1 rounded">{'?data={"A":35,"G":20,"T":30,"L":15,"Principal":"Águia","Razão Esquerdo":55,"Emoção Direito":45,"Pensante Anterior":60,"Atuante Posterior":40}'}</code></p>}
+          <p className="mt-4 text-gray-400">Exemplo de URL correta (JSON precisa ser URL-encoded):<br/>
+          <code className="text-sm bg-gray-900 p-1 rounded">{'?data={"A":35,"G":20,"T":30,"L":15,"Principal":"Águia","Razão Esquerdo":55,"Emoção Direito":45,"Pensante Anterior":60,"Atuante Posterior":40}'}</code>
+          </p>
         </div>
       );
     }
@@ -287,22 +221,19 @@ const App: React.FC = () => {
     if (animalImage && brainImage) {
       return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-              <ImageResultCard title="Perfil Comportamental" imageUrl={animalImage} />
-              <ImageResultCard title="Mapeamento Cerebral" imageUrl={brainImage} />
-            </div>
-            {renderSubmissionStatus()}
-            <div className="text-center mt-8">
-                <button onClick={handleReset} className="bg-gray-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-600 transition-colors">
-                    Gerar Novamente
-                </button>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+            <ImageResultCard
+              title="Perfil Comportamental"
+              imageUrl={animalImage}
+            />
+            <ImageResultCard
+              title="Mapeamento Cerebral"
+              imageUrl={brainImage}
+            />
+          </div>
+          {renderSubmissionStatus()}
         </>
       );
-    }
-    
-    if (!dataFromUrl) {
-      return renderForm();
     }
     
     return null;
@@ -315,7 +246,7 @@ const App: React.FC = () => {
           Seu Resultado Personalizado
         </h1>
         <p className="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
-          {animalImage ? 'As imagens abaixo foram geradas dinamicamente com base no seu perfil.' : 'Preencha os dados abaixo para gerar suas imagens personalizadas.'}
+          As imagens abaixo foram geradas dinamicamente com base no seu perfil.
         </p>
       </header>
       <main className="w-full max-w-6xl">
