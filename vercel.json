@@ -5,5 +5,11 @@
       "src": "api/index.tsx",
       "use": "@vercel/node"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/index",
+      "destination": "/api/index"
+    }
   ]
 }
