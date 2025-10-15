@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/**/*.mjs": {
+      "runtime": "nodejs18.x"
+    },
+    "api/**/*.mts": {
+        "runtime": "nodejs18.x"
+    }
+  }
+}
