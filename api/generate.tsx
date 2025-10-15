@@ -1,7 +1,7 @@
 // FIX: Import React to resolve 'React' namespace error for JSX and React types.
 import React from 'react';
 import { ImageResponse } from '@vercel/og';
-import { NextRequest } from 'next/server';
+// Use standard Request for better compatibility
 
 export const runtime = 'edge';
 
@@ -35,7 +35,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer) {
   return btoa(binary);
 }
 
-const getJsonData = (req: NextRequest) => {
+const getJsonData = (req: Request) => {
     const { searchParams } = new URL(req.url);
     const dataParam = searchParams.get('data');
     if (!dataParam) {
@@ -50,7 +50,7 @@ const getJsonData = (req: NextRequest) => {
 
 const generateImage = async (baseImageUrl: string, children: React.ReactNode) => {
     const fontData = await fetch(
-        new URL('https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aX8.ttf', import.meta.url)
+        new URL('https://fonts.gstatic.com/s/montserrat/v26/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCtr6Hw5aX8.ttf')
     ).then((res) => res.arrayBuffer());
 
     const response = new ImageResponse(
@@ -75,7 +75,7 @@ const generateImage = async (baseImageUrl: string, children: React.ReactNode) =>
     return `data:image/png;base64,${arrayBufferToBase64(buffer)}`;
 };
 
-export default async function handler(req: NextRequest) {
+export default async function handler(req: Request) { // Changed to standard Request
     try {
         const jsonData = getJsonData(req);
 
@@ -99,6 +99,12 @@ export default async function handler(req: NextRequest) {
             pensante: parseInt(jsonData["Pensante Anterior"], 10),
             atuante: parseInt(jsonData["Atuante Posterior"], 10),
         };
+
+        // Validação de valores numéricos
+        const allValues = [...Object.values(animalData), ...Object.values(brainData)];
+        if (allValues.some(isNaN)) {
+            throw new Error("Um ou mais valores numéricos fornecidos são inválidos. Verifique se os dados de porcentagem são números.");
+        }
 
         const principalAnimalFullName = jsonData.Principal;
         const animalNameMap: { [key: string]: keyof AnimalData } = {
